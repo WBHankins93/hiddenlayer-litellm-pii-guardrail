@@ -4,5 +4,18 @@ model_list:
       model: bedrock/amazon.nova-lite-v1:0
       aws_region_name: us-east-1
 
+guardrails:
+  - guardrail_name: hiddenlayer-pii-pre
+    litellm_params:
+      guardrail: custom_guardrail.HiddenLayerPIIGuardrail
+      mode: pre_call
+      default_on: true
+
+  - guardrail_name: hiddenlayer-pii-post
+    litellm_params:
+      guardrail: custom_guardrail.HiddenLayerPIIGuardrail
+      mode: post_call
+      default_on: true
+
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
