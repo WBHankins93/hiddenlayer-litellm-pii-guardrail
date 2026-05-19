@@ -79,6 +79,59 @@ When LiteLLM dynamically loads custom guardrails, Python module resolution must 
 
 Explicit package initialization and `PYTHONPATH` configuration ensured the custom guardrail could successfully import internal detector modules.
 
+## Bedrock quota limitation during integration testing
+
+After validating the LiteLLM deployment, custom guardrail integration, and Dockerized runtime, Bedrock began returning the following error for non-blocked prompts:
+
+```txt
+litellm.RateLimitError: BedrockException -
+"Too many tokens per day, please wait before trying again."
+```
+
+### Validation Completed Despite Quota Exhaustion
+
+Even with the Bedrock quota limitation, the following components were successfully validated independently:
+
+- LiteLLM proxy startup
+- AWS Bedrock authentication
+- Model routing through LiteLLM
+- Docker containerization
+- Custom guardrail loading
+- Prompt input interception
+- Email address blocking
+- SSN blocking
+- End-to-end request lifecycle through the proxy
+
+### Engineering Approach
+
+Rather than blocking progress on the entire implementation, testing continued by validating each system boundary independently:
+
+```txt
+Client Request
+    ↓
+LiteLLM Proxy
+    ↓
+Custom Guardrail
+    ↓
+PII Detection
+    ↓
+Block or Forward
+    ↓
+Bedrock Model Call
+```
+
+PII-blocked requests were confirmed to terminate before reaching Bedrock, proving the guardrail interception layer functioned correctly even while the upstream provider quota remained exhausted.
+
+### Production Considerations
+
+In a production deployment, recommended mitigations would include:
+
+- Provider fallback routing
+- Token budgeting and request throttling
+- Multi-model failover
+- Cached response patterns
+- Monitoring and alerting on provider quota exhaustion
+
 ## Container image vulnerability scan
 
 The initial Docker image scan reported high vulnerabilities in the base image.
