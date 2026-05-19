@@ -1,4 +1,4 @@
-from src.guardrails.detectors import PresidioPIIDetector
+from src.guardrails.detectors import CompositePIIDetector, PresidioPIIDetector
 
 
 class PIIGuardrail:
@@ -8,7 +8,7 @@ class PIIGuardrail:
     }
 
     def __init__(self):
-        self.detector = PresidioPIIDetector()
+        self.detector = CompositePIIDetector()
 
     def inspect(self, text: str):
         findings = self.detector.detect(text)
