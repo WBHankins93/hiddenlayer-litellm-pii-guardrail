@@ -29,3 +29,52 @@ Resolution:
 2. Try a different Bedrock model.
 3. Request a quota increase in AWS Service Quotas if needed.
 4. Continue local guardrail development with mocked model responses while Bedrock quota is unavailable.
+
+## Custom guardrail import resolution issues
+
+During LiteLLM startup, the proxy failed to load the custom guardrail with errors similar to:
+
+```txt
+ImportError: Could not import HiddenLayerPIIGuardrail from custom_guardrail
+```
+
+and
+
+```txt
+ModuleNotFoundError: No module named 'config.custom_guardrail'
+```
+
+### Root Cause
+
+LiteLLM dynamically imports custom guardrails relative to the config file path. Python package resolution required explicit package initialization and `PYTHONPATH` configuration.
+
+The project structure uses:
+
+```txt
+config/custom_guardrail.py
+src/guardrails/
+```
+
+Without package initialization, Python could not resolve imports correctly during LiteLLM startup.
+
+### Resolution
+
+Added package initialization files:
+
+```bash
+touch config/__init__.py
+touch src/__init__.py
+touch src/guardrails/__init__.py
+```
+
+Started LiteLLM with explicit project root pathing:
+
+```bash
+PYTHONPATH=. litellm --config config/litellm.config.yaml --port 4000
+```
+
+### Key Learning
+
+When LiteLLM dynamically loads custom guardrails, Python module resolution must be configured correctly for local project imports.
+
+Explicit package initialization and `PYTHONPATH` configuration ensured the custom guardrail could successfully import internal detector modules.
