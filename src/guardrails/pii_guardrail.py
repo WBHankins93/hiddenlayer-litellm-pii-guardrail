@@ -1,0 +1,24 @@
+from src.guardrails.detectors import PresidioPIIDetector
+
+
+class PIIGuardrail:
+    BLOCKED_ENTITIES = {
+        "EMAIL_ADDRESS",
+        "US_SOCIAL_SECURITY_NUMBER"
+    }
+
+    def __init__(self):
+        self.detector = PresidioPIIDetector()
+
+    def inspect(self, text: str):
+        findings = self.detector.detect(text)
+
+        blocked_findings = [
+            finding for finding in findings
+            if finding["entity_type"] in self.BLOCKED_ENTITIES
+        ]
+
+        return {
+            "allowed": len(blocked_findings) == 0,
+            "findings": blocked_findings
+        }
