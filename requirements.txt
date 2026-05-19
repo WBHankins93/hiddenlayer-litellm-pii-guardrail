@@ -2,3 +2,5 @@ litellm[proxy]
 boto3>=1.28.57
 python-dotenv
 pytest
+presidio-analyzer
+presidio-anonymizer
