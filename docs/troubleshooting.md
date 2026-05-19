@@ -78,3 +78,16 @@ PYTHONPATH=. litellm --config config/litellm.config.yaml --port 4000
 When LiteLLM dynamically loads custom guardrails, Python module resolution must be configured correctly for local project imports.
 
 Explicit package initialization and `PYTHONPATH` configuration ensured the custom guardrail could successfully import internal detector modules.
+
+## Container image vulnerability scan
+
+The initial Docker image scan reported high vulnerabilities in the base image.
+
+For this implementation, I selected `python:3.11-slim` because it had fewer reported high vulnerabilities than the tested `python:3.11-slim-bookworm` image while keeping the container lightweight and simple for the interview project.
+
+In a production environment, I would continue hardening this image by:
+- pinning the base image by digest
+- using automated image scanning in CI/CD
+- rebuilding regularly as patched images are released
+- evaluating distroless or minimal runtime images
+- separating build-time and runtime dependencies with a multi-stage build
