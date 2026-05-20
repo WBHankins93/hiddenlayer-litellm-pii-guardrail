@@ -7,4 +7,5 @@ Intializing repo
 5. Build custom guardrail and detectors
 6. Configure Docker
 7. Add documentation for troubleshooting and implementation
-8. 
+8. Add docker-compose and deployment notes
+9. Adding test examples via script
