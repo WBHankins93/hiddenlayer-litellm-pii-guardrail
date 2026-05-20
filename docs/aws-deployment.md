@@ -167,23 +167,126 @@ aws ecs register-task-definition \
 
 ---
 
-# Current Status
+# ECS Fargate Deployment
 
-At this stage, the following components are validated:
+## Get default VPC
 
-- Docker image build
+```bash
+export VPC_ID=$(aws ec2 describe-vpcs \
+  --filters Name=isDefault,Values=true \
+  --query "Vpcs[0].VpcId" \
+  --output text)
+
+echo $VPC_ID
+```
+
+## Get VPC subnets
+
+```bash
+export SUBNETS=$(aws ec2 describe-subnets \
+  --filters Name=vpc-id,Values=$VPC_ID \
+  --query "Subnets[*].SubnetId" \
+  --output text)
+
+echo $SUBNETS
+```
+
+## Create ECS security group
+
+```bash
+export SG_ID=$(aws ec2 create-security-group \
+  --group-name hiddenlayer-litellm-sg \
+  --description "Security group for LiteLLM ECS service" \
+  --vpc-id $VPC_ID \
+  --query GroupId \
+  --output text)
+
+echo $SG_ID
+```
+
+## Allow inbound traffic on port 4000
+
+```bash
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 4000 \
+  --cidr 0.0.0.0/0
+```
+
+## Create ECS Fargate service
+
+```bash
+aws ecs create-service \
+  --cluster $ECS_CLUSTER \
+  --service-name $ECS_SERVICE \
+  --task-definition $TASK_FAMILY \
+  --desired-count 1 \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={
+    subnets=[$(echo $SUBNETS | sed 's/ /,/g')],
+    securityGroups=[$SG_ID],
+    assignPublicIp=ENABLED
+  }" \
+  --region $AWS_REGION
+```
+
+## List ECS tasks
+
+```bash
+aws ecs list-tasks \
+  --cluster $ECS_CLUSTER \
+  --region $AWS_REGION
+```
+
+## Export ECS task ARN
+
+```bash
+export TASK_ARN=$(aws ecs list-tasks \
+  --cluster $ECS_CLUSTER \
+  --query "taskArns[0]" \
+  --output text \
+  --region $AWS_REGION)
+
+echo $TASK_ARN
+```
+
+## Describe ECS task
+
+```bash
+aws ecs describe-tasks \
+  --cluster $ECS_CLUSTER \
+  --tasks $TASK_ARN \
+  --region $AWS_REGION
+```
+
+---
+
+# Current Deployment Status
+
+The following components have been successfully validated:
+
+- LiteLLM local deployment
+- Bedrock model routing
+- custom PII guardrail integration
+- prompt-input email blocking
+- prompt-input SSN blocking
+- Docker containerization
 - ECR image push
 - ECS cluster creation
-- ECS task definition registration
-- LiteLLM container startup locally
-- custom guardrail loading
-- prompt input PII blocking
-- Bedrock model routing
+- ECS Fargate deployment
+- ECS task execution role
+- CloudWatch logging
+- ECS task runtime validation
 
-The remaining steps are:
+Current known constraint:
 
-- ECS Fargate service creation
-- public endpoint validation
-- `/v1/models` validation from ECS
-- ECS guardrail validation
-- final Bedrock quota re-test
+- Bedrock daily quota exhaustion for non-blocked prompts
+
+Remaining validation steps:
+
+- public ECS endpoint testing
+- `/v1/models` validation from ECS runtime
+- ECS prompt-input validation
+- model-output blocking validation
+- final presentation preparation

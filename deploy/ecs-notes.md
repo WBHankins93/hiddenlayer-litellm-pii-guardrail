@@ -93,3 +93,70 @@ This was intentionally selected to:
 - focus on the interview project objectives
 
 Production hardening improvements are documented separately.
+
+## ECS task memory sizing
+
+The first ECS task started successfully but exited with code `137`.
+
+```txt
+OutOfMemoryError: container killed due to memory usage
+```
+
+### Root Cause
+
+The initial ECS task definition used:
+
+```json
+{
+  "cpu": "512",
+  "memory": "1024"
+}
+```
+
+LiteLLM, Microsoft Presidio, and the spaCy language model exceeded the allocated memory during container startup.
+
+### Resolution
+
+The ECS task definition was updated to:
+
+```json
+{
+  "cpu": "1024",
+  "memory": "2048"
+}
+```
+
+Then a new task definition revision was registered:
+
+```bash
+aws ecs register-task-definition \
+  --cli-input-json file://deploy/task-definition.json \
+  --region $AWS_REGION
+```
+
+The ECS service was then redeployed:
+
+```bash
+aws ecs update-service \
+  --cluster $ECS_CLUSTER \
+  --service $ECS_SERVICE \
+  --task-definition $TASK_FAMILY \
+  --force-new-deployment \
+  --region $AWS_REGION
+```
+
+### Result
+
+The ECS Fargate task successfully reached:
+
+```txt
+RUNNING
+```
+
+### Key Learning
+
+AI security tooling and NLP libraries can introduce significant startup memory requirements. ECS task sizing should account for:
+- model loading
+- NLP initialization
+- runtime scanning overhead
+- concurrent request scaling
