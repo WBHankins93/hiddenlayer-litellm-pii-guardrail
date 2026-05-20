@@ -1,0 +1,13 @@
+services:
+  litellm:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: hiddenlayer-litellm-pii-guardrail
+    ports:
+      - "4000:4000"
+    env_file:
+      - ../.env
+    environment:
+      PYTHONPATH: /app
+      PORT: 4000
