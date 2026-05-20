@@ -10,3 +10,4 @@ Intializing repo
 8. Add docker-compose and deployment notes
 9. Adding test examples via script
 10. Create ECS resources - task definition
+11. Add ECS documentation, begin Fargate service
