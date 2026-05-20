@@ -7,3 +7,4 @@ Intializing repo
 5. Build custom guardrail and detectors
 6. Configure Docker
 7. Add documentation for troubleshooting and implementation
+8. 
