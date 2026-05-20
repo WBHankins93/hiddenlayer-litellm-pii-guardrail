@@ -1,0 +1,35 @@
+{
+    "family": "hiddenlayer-litellm-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "512",
+    "memory": "1024",
+    "executionRoleArn": "arn:aws:iam::975050091758:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+      {
+        "name": "hiddenlayer-litellm",
+        "image": "975050091758.dkr.ecr.us-east-1.amazonaws.com/hiddenlayer-litellm-pii-guardrail:latest",
+        "essential": true,
+        "portMappings": [
+          {
+            "containerPort": 4000,
+            "protocol": "tcp"
+          }
+        ],
+        "environment": [
+          { "name": "PYTHONPATH", "value": "/app" },
+          { "name": "PORT", "value": "4000" },
+          { "name": "AWS_REGION_NAME", "value": "us-east-1" },
+          { "name": "LITELLM_MASTER_KEY", "value": "bh-hiddenlayer-demo" }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/hiddenlayer-litellm",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        }
+      }
+    ]
+  }
