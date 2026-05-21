@@ -1,8 +1,12 @@
 ## Prompt Input Guardrail Validation
 
-The custom guardrail was configured in LiteLLM using `pre_call` mode and validated against both required PII types.
+The custom LiteLLM guardrail was configured in `pre_call` mode and validated against:
 
-### Email Address Test
+- email addresses
+- US Social Security Numbers
+
+
+### Email Address Blocking Test
 
 Input:
 

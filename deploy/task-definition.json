@@ -5,6 +5,7 @@
     "cpu": "1024",
     "memory": "2048",
     "executionRoleArn": "arn:aws:iam::975050091758:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::975050091758:role/hiddenlayerLiteLLMTaskRole",
     "containerDefinitions": [
       {
         "name": "hiddenlayer-litellm",

@@ -20,7 +20,7 @@ curl "$BASE_URL/v1/chat/completions" \
     \"messages\": [
       {
         \"role\": \"user\",
-        \"content\": \"Say hello in one sentence.\"
+        \"content\": \"What is the capital of the United States?\"
       }
     ]
   }"

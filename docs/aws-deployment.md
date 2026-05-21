@@ -20,7 +20,16 @@ Custom PII Guardrail
 Amazon Bedrock
 ```
 
-# Environment Variables
+## Prerequisites
+
+Before deployment, ensure:
+
+- AWS CLI is installed and authenticated
+- Docker Desktop is running
+- the LiteLLM container image builds locally
+- AWS Bedrock access is enabled for the target model
+
+## Configure Environment Variables
 
 ```bash
 export AWS_REGION=us-east-1
@@ -35,16 +44,9 @@ export CONTAINER_NAME=hiddenlayer-litellm
 export CONTAINER_PORT=4000
 ```
 
-## ECR Push
+## Create ECR Repository
 
 The Docker image is built locally and pushed to Amazon ECR.
-
-```bash
-export AWS_REGION=us-east-1
-export ECR_REPO=hiddenlayer-litellm-pii-guardrail
-export IMAGE_TAG=latest
-export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-```
 
 ```bash
 aws ecr create-repository \
@@ -52,46 +54,27 @@ aws ecr create-repository \
   --region $AWS_REGION
 ```
 
+## Authenticate Docker to ECR
+
 ```bash
 aws ecr get-login-password --region $AWS_REGION | \
 docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 ```
+
+## Tag Docker Image
 
 ```bash
 docker tag hiddenlayer-litellm-pii-guardrail:latest \
 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 ```
 
+## Push Docker Image to ECR
+
 ```bash
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 ```
 
-## Notes
-
-The Bedrock quota limitation does not block container deployment. ECS can still validate:
-
-- container startup
-- LiteLLM proxy startup
-- custom guardrail loading
-- `/v1/models` endpoint
-- prompt-input PII blocking before Bedrock
-
-## Production Hardening Considerations
-
-For the interview implementation, the ECS Fargate task was exposed with a public IP to keep the deployment focused on the core objective: running LiteLLM with a custom PII guardrail in a container orchestration service.
-
-For a production customer deployment, I would extend this architecture with:
-
-- Application Load Balancer for stable routing
-- TLS termination
-- Restricted security group ingress
-- AWS Secrets Manager for runtime secrets
-- CloudWatch alarms for task health and 4xx/5xx spikes
-- WAF or API Gateway for additional edge protection
-- Private subnets with NAT egress where appropriate
-- CI/CD-driven image promotion from ECR to ECS
-
-# Create ECS Cluster
+## Create ECS Cluster
 
 ```bash
 aws ecs create-cluster \
@@ -99,9 +82,7 @@ aws ecs create-cluster \
   --region $AWS_REGION
 ```
 
----
-
-# Create ECS Task Execution Role
+## Create ECS Task Execution Role
 
 ```bash
 aws iam create-role \
@@ -118,7 +99,7 @@ aws iam create-role \
   }'
 ```
 
-Attach the ECS task execution policy:
+## Attach ECS Task Execution Policy
 
 ```bash
 aws iam attach-role-policy \
@@ -126,9 +107,7 @@ aws iam attach-role-policy \
   --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 ```
 
----
-
-# ECS Task Definition
+## ECS Task Definition
 
 Task definitions are stored in:
 
@@ -145,9 +124,7 @@ The task definition configures:
 - exposed container port
 - ECS execution role
 
----
-
-# Create CloudWatch Log Group
+## Create CloudWatch Log Group
 
 ```bash
 aws logs create-log-group \
@@ -155,9 +132,7 @@ aws logs create-log-group \
   --region $AWS_REGION
 ```
 
----
-
-# Register Task Definition
+## Register Task Definition
 
 ```bash
 aws ecs register-task-definition \
@@ -165,11 +140,29 @@ aws ecs register-task-definition \
   --region $AWS_REGION
 ```
 
----
+## ECS Runtime IAM Configuration
 
-# ECS Fargate Deployment
+The ECS task requires a runtime task role to access Amazon Bedrock.
 
-## Get default VPC
+The ECS execution role only:
+- pulls images from ECR
+- writes logs to CloudWatch
+
+The runtime application permissions are provided separately using:
+
+```json
+"taskRoleArn"
+```
+
+Without this role, Bedrock requests fail with:
+
+```txt
+Unable to locate credentials
+```
+
+## ECS Fargate Deployment
+
+### Get Default VPC
 
 ```bash
 export VPC_ID=$(aws ec2 describe-vpcs \
@@ -180,7 +173,7 @@ export VPC_ID=$(aws ec2 describe-vpcs \
 echo $VPC_ID
 ```
 
-## Get VPC subnets
+### Get VPC Subnets
 
 ```bash
 export SUBNETS=$(aws ec2 describe-subnets \
@@ -191,7 +184,7 @@ export SUBNETS=$(aws ec2 describe-subnets \
 echo $SUBNETS
 ```
 
-## Create ECS security group
+### Create ECS Security Group
 
 ```bash
 export SG_ID=$(aws ec2 create-security-group \
@@ -204,7 +197,7 @@ export SG_ID=$(aws ec2 create-security-group \
 echo $SG_ID
 ```
 
-## Allow inbound traffic on port 4000
+### Allow Inbound Traffic on Port 4000
 
 ```bash
 aws ec2 authorize-security-group-ingress \
@@ -214,7 +207,7 @@ aws ec2 authorize-security-group-ingress \
   --cidr 0.0.0.0/0
 ```
 
-## Create ECS Fargate service
+### Create ECS Fargate Service
 
 ```bash
 aws ecs create-service \
@@ -231,7 +224,7 @@ aws ecs create-service \
   --region $AWS_REGION
 ```
 
-## List ECS tasks
+### List ECS Tasks
 
 ```bash
 aws ecs list-tasks \
@@ -239,7 +232,7 @@ aws ecs list-tasks \
   --region $AWS_REGION
 ```
 
-## Export ECS task ARN
+### Export ECS Task ARN
 
 ```bash
 export TASK_ARN=$(aws ecs list-tasks \
@@ -251,7 +244,7 @@ export TASK_ARN=$(aws ecs list-tasks \
 echo $TASK_ARN
 ```
 
-## Describe ECS task
+### Describe ECS Task
 
 ```bash
 aws ecs describe-tasks \
@@ -260,33 +253,44 @@ aws ecs describe-tasks \
   --region $AWS_REGION
 ```
 
----
+## Validate ECS Deployment
 
-# Current Deployment Status
+Retrieve the ECS public IP and validate the deployment:
 
-The following components have been successfully validated:
+```bash
+export BASE_URL=http://<public-ip>:4000
+export LITELLM_MASTER_KEY=bh-hiddenlayer-demo
 
-- LiteLLM local deployment
-- Bedrock model routing
-- custom PII guardrail integration
-- prompt-input email blocking
-- prompt-input SSN blocking
-- Docker containerization
-- ECR image push
-- ECS cluster creation
+./examples/curl_examples.sh
+```
+
+Validated successfully:
+- LiteLLM proxy startup
 - ECS Fargate deployment
-- ECS task execution role
-- CloudWatch logging
-- ECS task runtime validation
+- Bedrock authentication
+- custom guardrail loading
+- email blocking
+- SSN blocking
+- `/v1/models` endpoint
 
-Current known constraint:
+Safe prompts currently return a Bedrock quota response:
 
-- Bedrock daily quota exhaustion for non-blocked prompts
+```txt
+Too many tokens per day, please wait before trying again.
+```
 
-Remaining validation steps:
+This confirms the ECS runtime and Bedrock integration are functioning correctly.
 
-- public ECS endpoint testing
-- `/v1/models` validation from ECS runtime
-- ECS prompt-input validation
-- model-output blocking validation
-- final presentation preparation
+## Production Considerations
+
+This implementation intentionally deploys ECS Fargate with a public IP to keep the interview scope focused on the core deployment and guardrail integration.
+
+For production deployments, recommended improvements include:
+
+- Application Load Balancer
+- TLS termination
+- restricted security group ingress
+- AWS Secrets Manager
+- CloudWatch alarms
+- private subnets
+- CI/CD deployment pipeline

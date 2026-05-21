@@ -35,10 +35,6 @@ After deployment, validate:
 - prompt input containing SSN is blocked
 - safe prompt reaches Bedrock when quota is available
 
-## Known Constraint
-
-During implementation, Bedrock returned a daily token quota limit for safe prompts. This does not block ECS validation because PII-blocked prompts are intercepted before the Bedrock call.
-
 ## Operational Notes
 
 ### AWS CLI Credential Issue
@@ -76,9 +72,12 @@ This did not block deployment progress because:
 
 Initial Docker builds failed because the Dockerfile was executed from the `deploy/` directory while attempting to copy files from the repository root.
 
-Resolution:
-- moved build execution to repository root
-- used repository root as Docker build context
+Fixed by building from repository root:
+
+```bash
+docker build -t hiddenlayer-litellm-pii-guardrail \
+  -f deploy/Dockerfile .
+```
 
 ### Current Deployment Strategy
 
@@ -152,6 +151,12 @@ The ECS Fargate task successfully reached:
 ```txt
 RUNNING
 ```
+
+### ECS Public IP Rotation
+
+Public IP changed after ECS redeployments because the service was deployed without an ALB.
+
+New IP retrieved from ECS task ENI.
 
 ### Key Learning
 
