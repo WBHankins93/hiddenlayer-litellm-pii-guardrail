@@ -132,6 +132,84 @@ In a production deployment, recommended mitigations would include:
 - Cached response patterns
 - Monitoring and alerting on provider quota exhaustion
 
+## Hardcoded secret in ECS task definition
+
+### Issue
+
+The `LITELLM_MASTER_KEY` was defined as a plaintext value in the `environment` block of the ECS task definition and committed to version control.
+
+```json
+"environment": [
+  { "name": "LITELLM_MASTER_KEY", "value": "bh-hiddenlayer-demo" }
+]
+```
+
+Environment variables defined this way are visible in the ECS console, the task definition JSON, and git history.
+
+### Why this matters
+
+Hardcoded secrets in version control persist indefinitely in git history even after removal. For API keys and authentication tokens, this creates an exposure window that cannot be closed by simply deleting the value from the current file. The credential must be rotated.
+
+### Remediation
+
+Created a secret in AWS Secrets Manager scoped to this project:
+
+```bash
+aws secretsmanager create-secret \
+  --name hiddenlayer-litellm/master-key \
+  --description "LiteLLM master API key for HiddenLayer PII guardrail project" \
+  --secret-string "<value>" \
+  --region us-east-1
+```
+
+Added a least-privilege inline policy to the ECS execution role restricting access to this single secret:
+
+```bash
+aws iam put-role-policy \
+  --role-name ecsTaskExecutionRole \
+  --policy-name SecretsManagerLiteLLMKey \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "secretsmanager:GetSecretValue",
+        "Resource": "<secret-arn>"
+      }
+    ]
+  }'
+```
+
+Updated the task definition to use the `secrets` block instead of `environment`:
+
+```json
+"secrets": [
+  {
+    "name": "LITELLM_MASTER_KEY",
+    "valueFrom": "<secret-arn>"
+  }
+]
+```
+
+Rotated the exposed key value in Secrets Manager and forced a new ECS deployment to pick up the change:
+
+```bash
+aws secretsmanager update-secret \
+  --secret-id hiddenlayer-litellm/master-key \
+  --secret-string "<new-value>" \
+  --region us-east-1
+
+aws ecs update-service \
+  --cluster hiddenlayer-litellm-cluster \
+  --service hiddenlayer-litellm-service \
+  --force-new-deployment \
+  --region us-east-1
+```
+
+### Key takeaway
+
+ECS differentiates between `environment` and `secrets` in container definitions. Environment values are stored in plaintext and visible across the console, API responses, and any exported task definition JSON. The `secrets` block injects values at container startup from Secrets Manager or SSM Parameter Store and never exposes the plaintext in the task definition itself.
+
 ## Container image vulnerability scan
 
 The initial Docker image scan reported high vulnerabilities in the base image.
