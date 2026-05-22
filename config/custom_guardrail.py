@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from litellm.proxy.guardrails.guardrail_hooks.custom_guardrail import CustomGuardrail
 from litellm.proxy._types import UserAPIKeyAuth
-
+import asyncio
 from src.guardrails.pii_guardrail import PIIGuardrail
 
 
@@ -10,7 +10,7 @@ class HiddenLayerPIIGuardrail(CustomGuardrail):
         super().__init__(**kwargs)
         self.guardrail = PIIGuardrail()
 
-    def _extract_text_from_messages(self, messages):
+    def _extract_text_from_messages(self, messages) -> str:
         text_parts = []
 
         for message in messages or []:
@@ -26,8 +26,8 @@ class HiddenLayerPIIGuardrail(CustomGuardrail):
 
         return "\n".join(text_parts)
 
-    def _block_if_pii_detected(self, text, phase):
-        result = self.guardrail.inspect(text)
+    async def _block_if_pii_detected(self, text: str, phase: str) -> None:
+        result = await asyncio.to_thread(self.guardrail.inspect, text)
 
         if not result["allowed"]:
             detected_entities = [
@@ -51,11 +51,11 @@ class HiddenLayerPIIGuardrail(CustomGuardrail):
         cache,
         data,
         call_type,
-    ):
+    ) -> dict:
         messages = data.get("messages", [])
         prompt_text = self._extract_text_from_messages(messages)
 
-        self._block_if_pii_detected(prompt_text, "prompt_input")
+        await self._block_if_pii_detected(prompt_text, "prompt_input")
 
         return data
 
@@ -64,9 +64,10 @@ class HiddenLayerPIIGuardrail(CustomGuardrail):
         data,
         user_api_key_dict: UserAPIKeyAuth,
         response,
-    ):
+    ) -> dict:
         output_text = ""
 
+        """LiteLLM returns dict during streaming and object in standard mode"""
         if isinstance(response, dict):
             choices = response.get("choices", [])
         else:
@@ -83,6 +84,6 @@ class HiddenLayerPIIGuardrail(CustomGuardrail):
             if isinstance(content, str):
                 output_text += content + "\n"
 
-        self._block_if_pii_detected(output_text, "model_output")
+        await self._block_if_pii_detected(output_text, "model_output")
 
         return response

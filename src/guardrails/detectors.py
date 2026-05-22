@@ -67,8 +67,9 @@ class CompositePIIDetector(PIIDetector):
         return findings
 
 
+    """Presidio and regex detectors may independently flag the same SSN span."""
     def _deduplicate(self, findings: list[dict]) -> list[dict]:
-        """Remove duplicate findings based on entity type and position."""
+
         seen = set()
         unique = []
 
