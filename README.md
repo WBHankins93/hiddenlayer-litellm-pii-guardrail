@@ -11,3 +11,5 @@ Intializing repo
 9. Adding test examples via script
 10. Create ECS resources - task definition
 11. Add ECS documentation, create Fargate service
+12. Attach bedrock permissions
+13. redploy ECS service

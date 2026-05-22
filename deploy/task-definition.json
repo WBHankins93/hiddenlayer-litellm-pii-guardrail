@@ -21,7 +21,12 @@
           { "name": "PYTHONPATH", "value": "/app" },
           { "name": "PORT", "value": "4000" },
           { "name": "AWS_REGION_NAME", "value": "us-east-1" },
-          { "name": "LITELLM_MASTER_KEY", "value": "bh-hiddenlayer-demo" }
+          {"secrets": [
+            {
+              "name": "LITELLM_MASTER_KEY",
+              "valueFrom": "arn:aws:secretsmanager:us-east-1:975050091758:secret:hiddenlayer-litellm/master-key-i7wVmf"
+            }
+          ]}  
         ],
         "logConfiguration": {
           "logDriver": "awslogs",
