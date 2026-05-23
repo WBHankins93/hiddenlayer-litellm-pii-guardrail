@@ -19,9 +19,9 @@ class TestPresidioPIIDetector:
         assert "EMAIL_ADDRESS" in entity_types
 
     def test_detects_ssn(self):
-        findings = self.detector.detect("My SSN is 123-45-6789")
+        findings = self.detector.detect("My SSN is 433-77-9090")
         entity_types = [f["entity_type"] for f in findings]
-        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
+        assert "US_SSN" in entity_types
 
     def test_clean_text_returns_empty(self):
         findings = self.detector.detect("Hello, how are you?")
@@ -35,7 +35,7 @@ class TestRegexPIIDetector:
         self.detector = RegexPIIDetector()
 
     def test_detects_ssn_format(self):
-        findings = self.detector.detect("My SSN is 123-45-6789")
+        findings = self.detector.detect("My SSN is 433-77-9090")
         assert len(findings) == 1
         assert findings[0]["entity_type"] == "US_SOCIAL_SECURITY_NUMBER"
         assert findings[0]["score"] == 1.0
@@ -45,7 +45,7 @@ class TestRegexPIIDetector:
         assert findings == []
 
     def test_ignores_ssn_without_boundaries(self):
-        findings = self.detector.detect("ID0123-45-67890")
+        findings = self.detector.detect("ID0433-77-90900")
         assert findings == []
 
     def test_clean_text_returns_empty(self):
@@ -60,14 +60,14 @@ class TestCompositePIIDetector:
         self.detector = CompositePIIDetector()
 
     def test_detects_email_and_ssn_together(self):
-        text = "Email: test@example.com SSN: 123-45-6789"
+        text = "Email: test@example.com SSN: 433-77-9090"
         findings = self.detector.detect(text)
         entity_types = {f["entity_type"] for f in findings}
         assert "EMAIL_ADDRESS" in entity_types
-        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
+        assert "US_SSN" in entity_types
 
     def test_deduplicates_ssn_findings(self):
-        findings = self.detector.detect("My SSN is 123-45-6789")
+        findings = self.detector.detect("My SSN is 433-77-9090")
         ssn_findings = [f for f in findings if f["entity_type"] == "US_SOCIAL_SECURITY_NUMBER"]
         assert len(ssn_findings) == 1
 
@@ -90,18 +90,18 @@ class TestPIIGuardrail:
         assert "EMAIL_ADDRESS" in entity_types
 
     def test_blocks_ssn(self):
-        result = self.guardrail.inspect("My SSN is 123-45-6789")
+        result = self.guardrail.inspect("My SSN is 433-77-9090")
         assert result["allowed"] is False
         entity_types = [f["entity_type"] for f in result["findings"]]
-        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
+        assert "US_SSN" in entity_types
 
     def test_blocks_mixed_pii(self):
-        text = "Email me at test@example.com, SSN 123-45-6789"
+        text = "Email me at test@example.com, SSN 433-77-9090"
         result = self.guardrail.inspect(text)
         assert result["allowed"] is False
         entity_types = {f["entity_type"] for f in result["findings"]}
         assert "EMAIL_ADDRESS" in entity_types
-        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
+        assert "US_SSN" in entity_types
 
     def test_allows_non_blocked_entity(self):
         result = self.guardrail.inspect("Call me at 555-867-5309")

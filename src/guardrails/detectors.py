@@ -31,7 +31,7 @@ class PresidioPIIDetector(PIIDetector):
                 "score": result.score
             })
 
-        return self._deduplicate(findings)
+        return findings
 
 
 class RegexPIIDetector(PIIDetector):
@@ -64,7 +64,7 @@ class CompositePIIDetector(PIIDetector):
         for detector in self.detectors:
             findings.extend(detector.detect(text))
 
-        return findings
+        return self._deduplicate(findings)
 
 
     """Presidio and regex detectors may independently flag the same SSN span."""
