@@ -1,8 +1,9 @@
 model_list:
-  - model_name: bedrock-nova
-    litellm_params:
-      model: bedrock/amazon.nova-2-lite-v1:0
-      aws_region_name: us-east-1
+  # Nova 2 Lite disabled -- new account quota is 0 RPM, increase pending approval
+  # - model_name: bedrock-nova
+  #   litellm_params:
+  #     model: bedrock/amazon.nova-2-lite-v1:0
+  #     aws_region_name: us-east-1
   - model_name: bedrock-jamba
     litellm_params:
       model: bedrock/ai21.jamba-1-5-mini-v1:0

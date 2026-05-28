@@ -61,6 +61,12 @@ aws ecr get-login-password --region $AWS_REGION | \
 docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 ```
 
+## Build Docker Image
+
+```bash
+docker build -f deploy/Dockerfile -t hiddenlayer-litellm-pii-guardrail .
+```
+
 ## Tag Docker Image
 
 ```bash
@@ -285,18 +291,36 @@ export TASK_ARN=$(aws ecs list-tasks \
 echo $TASK_ARN
 ```
 
-### Describe ECS Task
+### Check Task Status
 
 ```bash
 aws ecs describe-tasks \
   --cluster $ECS_CLUSTER \
   --tasks $TASK_ARN \
+  --query "tasks[0].lastStatus" \
+  --output text \
   --region $AWS_REGION
+```
+
+### Get Public IP
+
+```bash
+export ENI_ID=$(aws ecs describe-tasks \
+  --cluster $ECS_CLUSTER \
+  --tasks $TASK_ARN \
+  --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" \
+  --output text \
+  --region $AWS_REGION)
+
+aws ec2 describe-network-interfaces \
+  --network-interface-ids $ENI_ID \
+  --query "NetworkInterfaces[0].Association.PublicIp" \
+  --output text
 ```
 
 ## Validate ECS Deployment
 
-Retrieve the ECS public IP and validate the deployment:
+Set the public IP and master key, then run the validation script:
 
 ```bash
 export BASE_URL=http://<public-ip>:4000
