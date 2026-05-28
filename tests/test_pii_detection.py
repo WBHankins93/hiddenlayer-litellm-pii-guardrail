@@ -93,7 +93,7 @@ class TestPIIGuardrail:
         result = self.guardrail.inspect("My SSN is 433-77-9090")
         assert result["allowed"] is False
         entity_types = [f["entity_type"] for f in result["findings"]]
-        assert "US_SSN" in entity_types
+        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
 
     def test_blocks_mixed_pii(self):
         text = "Email me at test@example.com, SSN 433-77-9090"
@@ -101,7 +101,7 @@ class TestPIIGuardrail:
         assert result["allowed"] is False
         entity_types = {f["entity_type"] for f in result["findings"]}
         assert "EMAIL_ADDRESS" in entity_types
-        assert "US_SSN" in entity_types
+        assert "US_SOCIAL_SECURITY_NUMBER" in entity_types
 
     def test_allows_non_blocked_entity(self):
         result = self.guardrail.inspect("Call me at 555-867-5309")

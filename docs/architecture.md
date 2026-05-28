@@ -35,7 +35,7 @@ flowchart TD
 
         Decision -->|No| Bedrock[Amazon Bedrock]
 
-        Bedrock --> Model[Amazon Nova Lite]
+        Bedrock --> Model[Model Backend]
 
         Model --> OutputGuard[Post-Call Guardrail Scan]
 
@@ -94,7 +94,7 @@ If no PII is detected:
 LiteLLM routes the request to:
 
 ```txt
-bedrock-amazon-nova-lite
+bedrock-nova | bedrock-jamba | groq-llama
 ```
 
 ### 6. Output Validation
@@ -158,18 +158,3 @@ This minimizes:
 
 The implementation intentionally blocks requests early in the request lifecycle.
 
-## Production Considerations
-
-For interview scope, the deployment uses:
-- ECS Fargate
-- public task IP
-- direct service exposure
-
-Recommended production improvements:
-- Application Load Balancer
-- TLS termination
-- private subnets
-- Secrets Manager
-- CloudWatch alarms
-- CI/CD pipeline
-- WAF or API Gateway

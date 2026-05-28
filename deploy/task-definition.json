@@ -20,12 +20,16 @@
         "environment": [
           { "name": "PYTHONPATH", "value": "/app" },
           { "name": "PORT", "value": "4000" },
-          { "name": "AWS_REGION_NAME", "value": "us-east-1" }  
+          { "name": "AWS_REGION_NAME", "value": "us-east-1" }
         ],
         "secrets": [
             {
               "name": "LITELLM_MASTER_KEY",
               "valueFrom": "arn:aws:secretsmanager:us-east-1:975050091758:secret:hiddenlayer-litellm/master-key-i7wVmf"
+            },
+            {
+              "name": "GROQ_API_KEY",
+              "valueFrom": "arn:aws:secretsmanager:us-east-1:975050091758:secret:hiddenlayer-litellm/groq-api-key-DHi0OY"
             }
           ],
         "logConfiguration": {

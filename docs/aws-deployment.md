@@ -160,6 +160,47 @@ Without this role, Bedrock requests fail with:
 Unable to locate credentials
 ```
 
+## Secrets Management
+
+Two secrets are stored in AWS Secrets Manager and injected at container startup via the ECS `secrets` block:
+
+```bash
+# LiteLLM master API key
+aws secretsmanager create-secret \
+  --name hiddenlayer-litellm/master-key \
+  --secret-string "<value>" \
+  --region us-east-1
+
+# Groq API key (fallback model)
+aws secretsmanager create-secret \
+  --name hiddenlayer-litellm/groq-api-key \
+  --secret-string "<value>" \
+  --region us-east-1
+```
+
+The ECS execution role requires a least-privilege inline policy granting `secretsmanager:GetSecretValue` scoped to each secret ARN:
+
+```bash
+aws iam put-role-policy \
+  --role-name ecsTaskExecutionRole \
+  --policy-name SecretsManagerAccess \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "secretsmanager:GetSecretValue",
+        "Resource": [
+          "<master-key-secret-arn>",
+          "<groq-api-key-secret-arn>"
+        ]
+      }
+    ]
+  }'
+```
+
+The task definition references secrets by ARN in the `secrets` block rather than the `environment` block. This prevents plaintext credentials from appearing in the task definition JSON, ECS console, or git history.
+
 ## ECS Fargate Deployment
 
 ### Get Default VPC
@@ -281,16 +322,3 @@ Too many tokens per day, please wait before trying again.
 
 This confirms the ECS runtime and Bedrock integration are functioning correctly.
 
-## Production Considerations
-
-This implementation intentionally deploys ECS Fargate with a public IP to keep the interview scope focused on the core deployment and guardrail integration.
-
-For production deployments, recommended improvements include:
-
-- Application Load Balancer
-- TLS termination
-- restricted security group ingress
-- AWS Secrets Manager
-- CloudWatch alarms
-- private subnets
-- CI/CD deployment pipeline
