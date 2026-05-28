@@ -300,7 +300,7 @@ Retrieve the ECS public IP and validate the deployment:
 
 ```bash
 export BASE_URL=http://<public-ip>:4000
-export LITELLM_MASTER_KEY=bh-hiddenlayer-demo
+export LITELLM_MASTER_KEY=<value-from-secrets-manager>
 
 ./examples/curl_examples.sh
 ```

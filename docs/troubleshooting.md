@@ -106,7 +106,7 @@ The `LITELLM_MASTER_KEY` was defined as a plaintext value in the `environment` b
 
 ```json
 "environment": [
-  { "name": "LITELLM_MASTER_KEY", "value": "bh-hiddenlayer-demo" }
+  { "name": "LITELLM_MASTER_KEY", "value": "<plaintext-value>" }
 ]
 ```
 

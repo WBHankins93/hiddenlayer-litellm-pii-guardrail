@@ -3,7 +3,7 @@
 set -e
 
 BASE_URL="${BASE_URL:-http://localhost:4000}"
-API_KEY="${LITELLM_MASTER_KEY:-bh-hiddenlayer-demo}"
+API_KEY="${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set}"
 MODEL="${MODEL:-bedrock-jamba}"
 FALLBACK_MODEL="${FALLBACK_MODEL:-groq-llama}"
 
