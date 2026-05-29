@@ -57,6 +57,22 @@ curl "$BASE_URL/v1/chat/completions" \
   }"
 
 echo
+echo "Testing realistic PII blocking (mixed content)..."
+curl "$BASE_URL/v1/chat/completions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"model\": \"$FALLBACK_MODEL\",
+    \"messages\": [
+      {
+        \"role\": \"user\",
+        \"content\": \"I need help writing a cover letter for a software engineering position. My name is John Smith, my email is john.smith@gmail.com, and my SSN is 433-77-9090. I have 5 years of experience in Python and AWS.\"
+      }
+    ],
+    \"max_tokens\": 200
+  }"
+
+echo
 echo "Testing safe prompt (Groq fallback)..."
 curl "$BASE_URL/v1/chat/completions" \
   -H "Authorization: Bearer $API_KEY" \

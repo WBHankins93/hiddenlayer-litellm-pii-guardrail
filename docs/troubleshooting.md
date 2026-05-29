@@ -1,20 +1,8 @@
-## Bedrock Anthropic access error
+# Troubleshooting
 
-If LiteLLM returns:
+---
 
-"Model use case details have not been submitted for this account"
-
-the LiteLLM proxy is working, but AWS Bedrock is blocking the Anthropic model until the account completes Anthropic model access setup.
-
-Resolution:
-1. Open Amazon Bedrock in the AWS Console.
-2. Confirm the region matches the LiteLLM config.
-3. Go to Model access / Model catalog.
-4. Submit use case details for Anthropic models.
-5. Wait several minutes and retry.
-
-Temporary workaround:
-Use an Amazon Bedrock model such as Nova Lite while Anthropic access is pending.
+---
 
 ## Bedrock daily token quota
 
@@ -29,6 +17,8 @@ Resolution:
 2. Try a different Bedrock model.
 3. Request a quota increase in AWS Service Quotas if needed.
 4. Continue local guardrail development with mocked model responses while Bedrock quota is unavailable.
+
+---
 
 ## Custom guardrail import resolution issues
 
@@ -79,6 +69,8 @@ When LiteLLM dynamically loads custom guardrails, Python module resolution must 
 
 Explicit package initialization and `PYTHONPATH` configuration ensured the custom guardrail could successfully import internal detector modules.
 
+---
+
 ## Bedrock quota limitation during integration testing
 
 After validating the LiteLLM deployment, custom guardrail integration, and Dockerized runtime, Bedrock began returning the following error for non-blocked prompts:
@@ -97,6 +89,8 @@ PII-blocked requests terminate before reaching Bedrock, confirming the guardrail
 ### Mitigation
 
 Added Groq as a fallback model in litellm.config.yaml. The guardrail operates identically across providers, demonstrating provider-agnostic PII detection.
+
+---
 
 ## Hardcoded secret in ECS task definition
 
@@ -175,6 +169,8 @@ aws ecs update-service \
 ### Key takeaway
 
 ECS differentiates between `environment` and `secrets` in container definitions. Environment values are stored in plaintext and visible across the console, API responses, and any exported task definition JSON. The `secrets` block injects values at container startup from Secrets Manager or SSM Parameter Store and never exposes the plaintext in the task definition itself.
+
+---
 
 ## Container image vulnerability scan
 

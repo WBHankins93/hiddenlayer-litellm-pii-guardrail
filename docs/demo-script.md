@@ -99,101 +99,30 @@ Tests use 433-77-9090 to avoid Presidio's invalidate_result filter.
 
 ## 5. Live Demo
 
-### Prerequisites
-
 ```bash
 export BASE_URL=http://<ecs-public-ip>:4000
-export LITELLM_MASTER_KEY=<key>
+export LITELLM_MASTER_KEY=<value-from-secrets-manager>
+
+./examples/curl_examples.sh
 ```
 
-### Test 1: Email PII Blocking
+The validation script runs all tests in sequence: model listing, PII blocking (email, SSN, realistic mixed-content prompt), Bedrock pass-through, and Groq fallback.
 
-```bash
-curl -s "$BASE_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "bedrock-jamba", "messages": [{"role": "user", "content": "My email is test@example.com"}]}'
-```
+Expected results:
 
-Expected: HTTP 400
+- Email/SSN/mixed PII prompts return HTTP 400 with detected entity types
+- Bedrock-jamba returns a model response, or 429 if daily token quota is exhausted (confirms auth and routing work)
+- Groq-llama returns a model response, proving the guardrail is provider-agnostic
+- `/v1/models` lists bedrock-jamba and groq-llama
 
-```json
-"detected_entities": ["EMAIL_ADDRESS"]
-```
-
-### Test 2: SSN PII Blocking
-
-```bash
-curl -s "$BASE_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "bedrock-jamba", "messages": [{"role": "user", "content": "My SSN is 123-45-6789"}]}'
-```
-
-Expected: HTTP 400
-
-```json
-"detected_entities": ["US_SOCIAL_SECURITY_NUMBER"]
-```
-
-### Test 3: Safe Prompt (Bedrock Pass-Through)
-
-```bash
-curl -s "$BASE_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "bedrock-jamba", "messages": [{"role": "user", "content": "What is machine learning?"}], "max_tokens": 50}'
-```
-
-Expected: Bedrock model response, or 429 if daily token quota is exhausted.
-
-If 429: the error confirms authentication, IAM role assumption, model routing, and
-Bedrock API invocation all function correctly. The quota limitation is an AWS account
-provisioning constraint on new accounts, not a code or configuration issue.
-See docs/troubleshooting.md for the full investigation.
-
-### Test 4: Groq Fallback (Provider-Agnostic Demo)
-
-```bash
-curl -s "$BASE_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "groq-llama", "messages": [{"role": "user", "content": "What is machine learning?"}], "max_tokens": 50}'
-```
-
-Expected: Model response from Groq. Demonstrates the guardrail works identically
-regardless of which LLM backend is behind the proxy.
-
-### Test 5: Groq PII Blocking
-
-```bash
-curl -s "$BASE_URL/v1/chat/completions" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "groq-llama", "messages": [{"role": "user", "content": "My email is test@example.com"}]}'
-```
-
-Expected: HTTP 400 -- same PII blocking behavior as Bedrock-routed requests.
-
-### Test 6: Model List
-
-```bash
-curl -s "$BASE_URL/v1/models" \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY"
-```
-
-Expected: JSON listing bedrock-nova, bedrock-jamba, and groq-llama.
+See docs/troubleshooting.md for Bedrock quota investigation and mitigation.
 
 
-## 6. AWS Deployment
-
-Reference: docs/aws-deployment.md
-
-### Issues Encountered
+## 6. Deployment Issues
 
     OOM exit code 137         Initial task used 1024 MB, Presidio + spaCy exceeded it
     Hardcoded secret          Remediated with Secrets Manager, rotated the exposed key
     Docker build context      Dockerfile in deploy/ required building from repo root
     Image vulnerabilities     Selected python:3.11-slim for lower CVE count vs bookworm
 
-All issues documented in docs/troubleshooting.md with root cause and resolution.
+Full details in docs/troubleshooting.md.

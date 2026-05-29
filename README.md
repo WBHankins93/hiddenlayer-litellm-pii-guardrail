@@ -44,7 +44,6 @@ docs/
   architecture.md            # System architecture and deployment design
   aws-deployment.md          # Full AWS deployment walkthrough with CLI commands
   demo-script.md             # Presentation demo script with expected outputs
-  implementation.md          # Guardrail validation results with actual test output
   troubleshooting.md         # Issues encountered and resolutions
 
 examples/

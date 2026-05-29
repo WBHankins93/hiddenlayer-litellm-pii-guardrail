@@ -13,36 +13,24 @@ The solution integrates:
 
 ```mermaid
 flowchart TD
-
     User[Client Request]
-
     User --> ECS
 
     subgraph AWS
         ECS[ECS Fargate Service]
-
         ECS --> LiteLLM[LiteLLM Proxy]
-
         LiteLLM --> Guardrail[Custom PII Guardrail]
-
         Guardrail --> Presidio[Microsoft Presidio Analyzer]
-
         Guardrail --> Regex[Regex SSN Detector]
-
-        Guardrail --> Decision{PII Detected?}
-
+        Presidio --> Composite[Composite Detector - Deduplicate]
+        Regex --> Composite
+        Composite --> Decision{PII Detected?}
         Decision -->|Yes| Block[Return 400 Error]
-
         Decision -->|No| Bedrock[Amazon Bedrock]
-
         Bedrock --> Model[Model Backend]
-
         Model --> OutputGuard[Post-Call Guardrail Scan]
-
-        OutputGuard --> OutputDecision{PII Detected?}
-
+        OutputGuard --> OutputDecision{PII in Response?}
         OutputDecision -->|Yes| OutputBlock[Block Model Response]
-
         OutputDecision -->|No| Success[Return Safe Response]
     end
 ```
