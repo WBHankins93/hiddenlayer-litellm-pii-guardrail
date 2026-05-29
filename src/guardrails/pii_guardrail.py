@@ -3,7 +3,7 @@ from src.guardrails.detectors import CompositePIIDetector
 
 class PIIGuardrail:
 
-    """Extend this set to block additional Presidio entity types without modifying detection logic."""
+    """Extend this set to block additional Presidio entity types without modifying detection logic. Can be extended to a policy map (block, warn, redact)"""
     BLOCKED_ENTITIES = {
         "EMAIL_ADDRESS",
         "US_SOCIAL_SECURITY_NUMBER",
