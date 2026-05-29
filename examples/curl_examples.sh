@@ -8,8 +8,8 @@ MODEL="${MODEL:-bedrock-jamba}"
 FALLBACK_MODEL="${FALLBACK_MODEL:-groq-llama}"
 
 echo "Listing configured models..."
-curl -s "$BASE_URL/v1/models" \
-  -H "Authorization: Bearer $API_KEY" | jq .
+curl "$BASE_URL/v1/models" \
+  -H "Authorization: Bearer $API_KEY"
 
 echo
 echo "Testing email PII blocking..."
@@ -24,7 +24,7 @@ curl -s "$BASE_URL/v1/chat/completions" \
         \"content\": \"My email is test@example.com\"
       }
     ]
-  }" | jq .
+  }"
 
 echo
 echo "Testing SSN PII blocking..."
@@ -39,7 +39,7 @@ curl -s "$BASE_URL/v1/chat/completions" \
         \"content\": \"My SSN is 424-45-6839\"
       }
     ]
-  }" | jq .
+  }"
 
 echo
 echo "Testing safe prompt (Bedrock)..."
@@ -54,7 +54,7 @@ curl -s "$BASE_URL/v1/chat/completions" \
         \"content\": \"What is the capital of the United States?\"
       }
     ]
-  }" | jq .
+  }"
 
 echo
 echo "Testing realistic PII blocking (mixed content)..."
@@ -70,7 +70,7 @@ curl -s "$BASE_URL/v1/chat/completions" \
       }
     ],
     \"max_tokens\": 200
-  }" | jq .
+  }"
 
 echo
 echo "Testing safe prompt (Groq fallback)..."
@@ -85,4 +85,4 @@ curl -s "$BASE_URL/v1/chat/completions" \
         \"content\": \"What is the capital of the United States?\"
       }
     ]
-  }" | jq .
+  }"
